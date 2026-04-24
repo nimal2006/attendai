@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise Admin - AttendAI</title>
+    <meta name="description" content="AttendAI Enterprise Admin Dashboard — AI Attendance, Academic Management, and Smart School Operations">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/admin.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-icon"><i class="fas fa-brain"></i></div>
+                <span>AttendAI</span>
+            </div>
+            <div class="nav-links">
+                <div class="nav-category">Core Operations</div>
+                <a class="nav-item active" data-target="view-dashboard"><i class="fas fa-th-large"></i> Dashboard</a>
+                <a class="nav-item" data-target="view-attendance"><i class="fas fa-calendar-check"></i> Attendance</a>
+                <a class="nav-item" data-target="view-academic"><i class="fas fa-graduation-cap"></i> Academics</a>
+                
+                <div class="nav-category">Directory</div>
+                <a class="nav-item" data-target="view-students"><i class="fas fa-user-graduate"></i> Students</a>
+                <a class="nav-item" data-target="view-teachers"><i class="fas fa-chalkboard-teacher"></i> Teachers</a>
+                <a class="nav-item" data-target="view-parents"><i class="fas fa-users"></i> Parents</a>
+                
+                <div class="nav-category">Intelligence</div>
+                <a class="nav-item" data-target="view-face-reg"><i class="fas fa-eye"></i> Face Encoding</a>
+                <a class="nav-item" data-target="view-anticheat"><i class="fas fa-shield-alt"></i> Anti-Cheat</a>
+                <a class="nav-item" data-target="view-sms"><i class="fas fa-comment-dots"></i> SMS Center</a>
+                <a class="nav-item" data-target="view-reports"><i class="fas fa-file-export"></i> Reports</a>
+
+                <div class="nav-category">Hardware & BI</div>
+                <a class="nav-item" data-target="view-cognos"><i class="fas fa-chart-pie"></i> IBM Cognos BI</a>
+                <a class="nav-item" data-target="view-esp32cam"><i class="fas fa-video"></i> ESP32 Camera</a>
+                <a class="nav-item" data-target="view-esp32lcd"><i class="fas fa-tv"></i> ESP32 LCD</a>
+                
+                <div class="nav-category">System</div>
+                <a class="nav-item" data-target="view-alerts"><i class="fas fa-bell"></i> Alerts Hub</a>
+                <a class="nav-item" data-target="view-activity"><i class="fas fa-history"></i> Audit Trail</a>
+                <a class="nav-item" data-target="view-settings"><i class="fas fa-cog"></i> Settings</a>
+            </div>
+            <div class="sidebar-footer">
+                <div class="user-avatar"><i class="fas fa-user-circle"></i></div>
+                <div class="user-info">
+                    <span class="user-name" id="sidebarUserName">Admin User</span>
+                    <span class="user-role">System Administrator</span>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-area">
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="sidebar-toggle" id="sidebarToggle"><i class="fas fa-bars"></i></button>
+                    <h1 id="currentViewTitle">Dashboard Overview</h1>
+                </div>
+                <div class="topbar-right">
+                    <div class="status-pill" id="networkStatus">
+                        <div class="status-dot"></div> <span id="networkText">Online</span>
+                    </div>
+                    <div class="theme-switch-wrapper">
+                        <label class="theme-switch" for="checkbox">
+                            <input type="checkbox" id="checkbox" />
+                            <div class="slider round"><i class="fas fa-sun sun-icon"></i><i class="fas fa-moon moon-icon"></i></div>
+                        </label>
+                    </div>
+                    <button id="micBtn" class="topbar-btn mic-btn" title="Voice Assistant"><i class="fas fa-microphone"></i></button>
+                    <button class="topbar-btn" onclick="forceSync()" title="Force Sync"><i class="fas fa-sync-alt"></i></button>
+                    <button class="topbar-btn danger-btn" onclick="logout()" title="Logout"><i class="fas fa-sign-out-alt"></i></button>
+                </div>
+            </header>
+
+            <div class="view-container">
+                
+                <!-- ════════════════════════════════════════ -->
+                <!-- DASHBOARD -->
+                <!-- ════════════════════════════════════════ -->
+                <section id="view-dashboard" class="view-section active">
+                    <div class="kpi-grid">
+                        <div class="kpi-card kpi-cyan">
+                            <div class="kpi-icon"><i class="fas fa-user-graduate"></i></div>
+                            <h3 id="kp_students">--</h3>
+                            <p>Registered Students</p>
+                        </div>
+                        <div class="kpi-card kpi-green">
+                            <div class="kpi-icon"><i class="fas fa-calendar-check"></i></div>
+                            <h3 id="kp_att">--%</h3>
+                            <p>Today's Attendance</p>
+                        </div>
+                        <div class="kpi-card kpi-amber">
+                            <div class="kpi-icon"><i class="fas fa-chart-line"></i></div>
+                            <h3 id="kp_perf">--%</h3>
+                            <p>Avg Academic Perf.</p>
+                        </div>
+                        <div class="kpi-card kpi-red">
+                            <div class="kpi-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                            <h3 id="kp_risk">--</h3>
+                            <p>At-Risk Students</p>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-grid">
+                        <div class="panel chart-panel">
+                            <div class="panel-header">
+                                <h3><i class="fas fa-chart-area"></i> Weekly Attendance Trend</h3>
+                            </div>
+                            <div class="chart-wrapper"><canvas id="weeklyAttChart"></canvas></div>
+                        </div>
+                        <div class="panel chart-panel">
+                            <div class="panel-header">
+                                <h3><i class="fas fa-chart-pie"></i> Status Distribution</h3>
+                            </div>
+                            <div class="chart-wrapper"><canvas id="statusPieChart"></canvas></div>
+                        </div>
+                    </div>
+
+                    <div class="panel risk-panel">
+                        <div class="panel-header">
+                            <h3><i class="fas fa-brain"></i> AI Predictive Interventions</h3>
+                            <span class="badge badge-pending">Machine Learning</span>
+                        </div>
+                        <p class="panel-subtitle">Students flagged by the AI engine based on declining attendance and academic trajectories.</p>
+                        <table>
+                            <thead><tr><th>ID</th><th>Student Name</th><th>Class</th><th>Attendance</th><th>Avg Score</th><th>Action</th></tr></thead>
+                            <tbody id="riskTableBody"><tr><td colspan="6" class="empty-state"><i class="fas fa-spinner fa-spin"></i> Analyzing risk patterns...</td></tr></tbody>
+                        </table>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+                        </div>
+                        <div class="quick-actions-grid">
+                            <button class="action-card" data-goto="view-students"><i class="fas fa-user-plus"></i><span>Add Student</span></button>
+                            <button class="action-card" data-goto="view-attendance"><i class="fas fa-clipboard-check"></i><span>Mark Attendance</span></button>
+                            <button class="action-card" data-goto="view-academic"><i class="fas fa-pen"></i><span>Enter Marks</span></button>
+                            <button class="action-card" data-goto="view-sms"><i class="fas fa-paper-plane"></i><span>Send SMS</span></button>
+                            <button class="action-card" data-goto="view-face-reg"><i class="fas fa-camera"></i><span>Face Register</span></button>
+                            <button class="action-card" data-goto="view-reports"><i class="fas fa-download"></i><span>Export Data</span></button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ════════════════════════════════════════ -->
+                <!-- ATTENDANCE -->
+                <!-- ════════════════════════════════════════ -->
+                <section id="view-attendance" class="view-section">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3><i class="fas fa-clipboard-check"></i> Mark Attendance Manually</h3>
+                        </div>
+                        <form id="markAttendanceForm" class="form-grid-3">
+                            <div class="input-group">
+                                <label for="attStudentSelect">Select Student</label>
+                                <select id="attStudentSelect" required><option value="">Loading students...</option></select>
+                            </div>
+                            <div class="input-group">
+                                <label for="attStatus">Status</label>
+                                <select id="attStatus" required>
+                                    <option value="present">Present</option>
+                                    <option value="absent">Absent</option>
+                                    <option value="late">Late</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn-glow"><i class="fas fa-check-circle"></i> Submit</button>
+                        </form>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3><i class="fas fa-table"></i> Today's Attendance Log</h3>
+                            <span class="badge badge-sent" id="attDateBadge"></span>
+                        </div>
+                        <table>
+                            <thead><tr><th>Student ID</th><th>Name</th><th>Class</th><th>Status</th><th>Method</th><th>Time</th></tr></thead>
+                            <tbody id="attendanceTableBody"><tr><td colspan="6" class="empty-state"><i class="fas fa-spinner fa-spin"></i> Loading data...</td></tr></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- ════════════════════════════════════════ -->
+                <!-- ACADEMICS / MARKS -->
+                <!-- ════════════════════════════════════════ -->
+                <section id="view-academic" class="view-section">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3><i class="fas fa-pen-fancy"></i> Submit Marks Entry</h3>
+                        </div>
+                        <form id="addMarksForm" class="form-grid">
+                            <div class="input-group">
+                                <label for="marksStudentSelect">Student</label>
+                                <select id="marksStudentSelect" required><option value="">Loading...</option></select>
+                            </div>
+                            <div class="input-group">
+                                <label for="marksSubject">Subject</label>
+                                <input type="text" id="marksSubject" placeholder="e.g. Mathematics" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="marksObtained">Marks Obtained</label>
+                                <input type="number" id="marksObtained" placeholder="85" min="0" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="marksTotal">Total Marks</label>
+                                <input type="number" id="marksTotal" placeholder="100" min="1" value="100" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="marksExamType">Exam Type</label>
+                                <select id="marksExamType">
+                                    <option value="Mid-Term">Mid-Term</option>
+                                    <option value="Final">Final</option>
+                                    <option value="Unit Test">Unit Test</option>
+                                    <option value="Assignment">Assignment</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn-glow"><i class="fas fa-save"></i> Save Marks</button>
+                        </form>
+                    </div>
+                    <div class="panel chart-panel">
+                        <div class="panel-header">
+                            <h3><i class="fas fa-chart-bar"></i> Academic Performance Overview</h3>
+                        </div>
+                        <div class="chart-wrapper" style="height:300px;"><canvas id="gradeChart"></canvas></div>
+                    </div>
+                </section>
+
+                <!-- ════════════════════════════════════════ -->
+                <!-- STUDENTS -->
+                <!-- ════════════════════════════════════════ -->
+                <section id="view-students" class="view-section">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3><i class="fas fa-user-plus"></i> Register New Student</h3>
+                        </div>
+                        <form id="addStudentForm" class="form-grid">
+                            <div class="input-group">
+                                <label for="stuName">Full Name</label>
+                                <input type="text" id="stuName" placeholder="John Doe" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="stuRoll">Roll Number</label>
+                                <input type="text" id="stuRoll" placeholder="S001" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="stuClass">Class & Section</label>
+                                <input type="text" id="stuClass" placeholder="10-A" required>
+                            </div>
+                            <button type="submit" class="btn-glow"><i class="fas fa-plus-circle"></i> Add Record</button>
+                        </form>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3><i class="fas fa-list"></i> Student Directory</h3>
+                            <div class="search-box">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="studentSearchInput" placeholder="Search students...">
+                            </div>
+                        </div>
+                        <table>
+                            <thead><tr><th>ID</th><th>Name</th><th>Roll No.</th><th>Class</th><th>Actions</th></tr></thead>
+                            <tbody id="studentTableBody"><tr><td colspan="5" class="empty-state"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- ════════════════════════════════════════ -->
+                <!-- TEACHERS -->
+                <!-- ════════════════════════════════════════ -->
+                <section id="view-teachers" class="view-section">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3><i class="fas fa-chalkboard-teacher"></i> Add New Instructor</h3>
+                        </div>
+                        <form id="addTeacherForm" class="form-grid">
+                            <div class="input-group">
+                                <label for="teacherName">Full Name</label>
+                                <input type="text" id="teacherName" placeholder="Dr. Jane Smith" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="teacherSubject">Subject Specialization</label>
+                                <input type="text" id="teacherSubject" placeholder="Physics" required>
+                            </div>
+                            <button type="submit" class="btn-glow"><i class="fas fa-plus-circle"></i> Add Teacher</button>
+                        </form>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3><i class="fas fa-id-badge"></i> Instructor Directory</h3>
+                        </div>
+                        <table>
+                            <thead><tr><th>ID</th><th>Name</th><th>Subject</th><th>Actions</th></tr></thead>
+                            <tbody id="teacherTableBody"><tr><td colspan="4" class="empty-state"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- ════════════════════════════════════════ -->
+                <!-- PARENTS -->
+                <!-- ════════════════════════════════════════ -->
+                <section id="view-parents" class="view-section">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3><i class="fas fa-user-friends"></i> Register Guardian</h3>
+                        </div>
+                        <form id="addParentForm" class="form-grid">
+                            <div class="input-group">
+                                <label for="parentName">Guardian Name</label>
+                                <input type="text" id="parentName" placeholder="Mr. Raj Kumar" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="parentPhone">Phone / WhatsApp</label>
+                                <input type="text" id="parentPhone" placeholder="+91 98765 43210" required>
+                            </div>
+                            <button type="submit" class="btn-glow"><i class="fas fa-user-check"></i> Register</button>
+                        </form>
+                    </div>
+                    <div class="panel link-panel">
+                        <div class="panel-header">
+                            <h3><i class="fas fa-link"></i> Child–Guardian Linking</h3>
+                        </div>
+                        <form id="linkParentForm" class="form-grid-3">
+                            <div class="input-group">
+                                <label for="linkParentSelect">Select Guardian</label>
+                                <select id="linkParentSelect" required><option value="">Loading...</option></select>
+                            </div>
+                            <div class="input-group">
+                                <label for="linkStudentSelect">Select Student</label>
+                                <select id="linkStudentSelect" required><option value="">Loading...</option></select>
+                            </div>
+                            <button type="submit" class="btn-outline success-btn"><i class="fas fa-check"></i> Map Relation</button>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- ════════════════════════════════════════ -->
+                <!-- FACE RECOGNITION -->
+                <!-- ════════════════════════════════════════ -->
+                <section id="view-face-reg" class="view-section">
+                    <div class="panel face-panel">
+                        <div class="face-panel-grid">
+                            <div>
+                                <div class="panel-header"><h3><i class="fas fa-eye"></i> Face Enrollment Tool</h3></div>
+                                <p class="panel-subtitle">Ensure adequate lighting before encoding.</p>
+                                <form id="faceRegForm" class="face-form">
+                                    <div class="input-group">
+                                        <label for="targetStuID">Student ID</label>
+                                        <input type="number" id="targetStuID" placeholder="e.g. 1" required>
+                                    </div>
+                                    <button type="button" id="startRegCam" class="btn-outline"><i class="fas fa-video"></i> Open Camera</button>
+                                    <button type="button" id="captureFaceBtn" class="btn-glow capture-btn" style="display:none;"><i class="fas fa-camera"></i> Encode Baseline</button>
+                                    <p id="faceRegMsg" class="face-msg"></p>
+                                </form>
+                            </div>
+                            <div class="camera-preview">
+                                <video id="regVideo" autoplay muted></video>
+                                <div id="camPlaceholder" class="cam-placeholder">
+                                    <i class="fas fa-video-slash"></i>
+                                    <span>Camera Offline</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ════════════════════════════════════════ -->
+                <!-- ANTI-CHEAT -->
+                <!-- ════════════════════════════════════════ -->
+                <section id="view-anticheat" class="view-section">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3><i class="fas fa-shield-alt"></i> Liveness & Fraud Rejections</h3>
+                            <span class="badge badge-absent">Security Module</span>
+                        </div>
+                        <table>
+                            <thead><tr><th>Timestamp</th><th>Reason Code</th><th>Status</th></tr></thead>
+                            <tbody id="antiCheatLogs"><tr><td colspan="3" class="empty-state">Awaiting sync...</td></tr></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- ════════════════════════════════════════ -->
+                <!-- SMS CENTER -->
+                <!-- ════════════════════════════════════════ -->
+                <section id="view-sms" class="view-section">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3><i class="fas fa-paper-plane"></i> Direct SMS Broadcast</h3>
+                            <span class="badge badge-sent">Twilio</span>
+                        </div>
+                        <form id="smsBroadcastForm" class="form-grid">
+                            <div class="input-group">
+                                <label for="smsTarget">Recipient Phone</label>
+                                <input type="text" id="smsTarget" placeholder="+91 98765 43210" required>
+                            </div>
+                            <div class="input-group full-width">
+                                <label for="smsMessage">Message Body</label>
+                                <textarea id="smsMessage" rows="4" placeholder="Type your message here..." required></textarea>
+                            </div>
+                            <button type="submit" class="btn-glow"><i class="fas fa-paper-plane"></i> Dispatch SMS</button>
+                        </form>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3><i class="fas fa-history"></i> SMS Outbox</h3>
+                        </div>
+                        <table>
+                            <thead><tr><th>Phone</th><th>Event</th><th>Message</th><th>Status</th></tr></thead>
+                            <tbody id="smsLogTable"><tr><td colspan="4" class="empty-state">No SMS logs yet</td></tr></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- ════════════════════════════════════════ -->
+                <!-- REPORTS -->
+                <!-- ════════════════════════════════════════ -->
+                <section id="view-reports" class="view-section">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3><i class="fas fa-file-export"></i> Data Export Center</h3>
+                        </div>
+                        <p class="panel-subtitle">Generate and download datasets for reporting and analytics.</p>
+                        <div class="export-cards">
+                            <a href="/api/reports/bi/export" target="_blank" class="export-card">
+                                <i class="fas fa-file-csv"></i>
+                                <span>Master Attendance CSV</span>
+                            </a>
+                            <div class="export-card disabled-card">
+                                <i class="fas fa-file-pdf"></i>
+                                <span>Academic Report (PDF)</span>
+                                <small>Coming Soon</small>
+                            </div>
+                            <div class="export-card disabled-card">
+                                <i class="fas fa-file-excel"></i>
+                                <span>Student Directory (XLSX)</span>
+                                <small>Coming Soon</small>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ════════════════════════════════════════ -->
+                <!-- IBM COGNOS BI DASHBOARD -->
+                <!-- ════════════════════════════════════════ -->
+                <section id="view-cognos" class="view-section">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3><i class="fas fa-chart-pie"></i> IBM Cognos Analytics Dashboard</h3>
+                            <span class="badge badge-sent">Live BI</span>
+                        </div>
+                        <p class="panel-subtitle">Real-time business intelligence and multi-layer attendance forecasting from IBM Cognos.</p>
+                        <div class="cognos-frame">
+                            <iframe src="https://eu2.ca.analytics.ibm.com/bi/?perspective=dashboard&amp;pathRef=.my_folders%2FBI%2BDASHBOARD&amp;closeWindowOnLastView=true&amp;ui_appbar=false&amp;ui_navbar=false&amp;shareMode=embedded&amp;action=view&amp;mode=dashboard&amp;subView=model0000019d91dc0bec_00000001&amp;nav_filter=true" width="100%" height="600" frameborder="0" gesture="media" allow="encrypted-media" allowfullscreen="" sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ════════════════════════════════════════ -->
+                <!-- ESP32-CAM LIVE STREAM -->
+                <!-- ════════════════════════════════════════ -->
+                <section id="view-esp32cam" class="view-section">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3><i class="fas fa-video"></i> ESP32-CAM Live Stream</h3>
+                            <span class="badge badge-pending" id="esp32camStatus">Disconnected</span>
+                        </div>
+                        <p class="panel-subtitle">Enter the IP address of your ESP32-CAM module to use it as a live classroom webcam for face recognition.</p>
+                        <div class="form-grid-3" style="margin-bottom:20px;">
+                            <div class="input-group">
+                                <label for="esp32CamIP">ESP32-CAM IP Address</label>
+                                <input type="text" id="esp32CamIP" placeholder="e.g. 192.168.1.100" value="">
+                            </div>
+                            <div class="input-group">
+                                <label for="esp32CamPort">Stream Port</label>
+                                <input type="text" id="esp32CamPort" placeholder="81" value="81">
+                            </div>
+                            <button class="btn-glow" id="connectEsp32Cam" onclick="connectESP32Cam()"><i class="fas fa-plug"></i> Connect</button>
+                        </div>
+                        <div class="esp32-stream-container" id="esp32StreamContainer">
+                            <div class="cam-placeholder" id="esp32CamPlaceholder">
+                                <i class="fas fa-microchip"></i>
+                                <span>ESP32-CAM Offline</span>
+                                <small>Enter IP and click Connect to begin streaming</small>
+                            </div>
+                            <img id="esp32CamStream" class="esp32-stream" style="display:none;" alt="ESP32-CAM Stream">
+                        </div>
+                        <div style="margin-top:16px;">
+                            <button class="btn-outline" id="esp32CamCapture" onclick="captureESP32Frame()" disabled><i class="fas fa-camera"></i> Capture Frame for Face Recognition</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ════════════════════════════════════════ -->
+                <!-- ESP32 LCD ATTENDANCE DISPLAY -->
+                <!-- ════════════════════════════════════════ -->
+                <section id="view-esp32lcd" class="view-section">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3><i class="fas fa-tv"></i> ESP32 LCD Attendance Display</h3>
+                            <span class="badge badge-pending" id="esp32lcdStatus">Disconnected</span>
+                        </div>
+                        <p class="panel-subtitle">Connect an ESP32 with LCD display. The ESP32 polls this server for attendance data and displays student name + status on the LCD in real-time.</p>
+                        <div class="form-grid-3" style="margin-bottom:20px;">
+                            <div class="input-group">
+                                <label for="esp32LcdIP">ESP32 LCD IP Address</label>
+                                <input type="text" id="esp32LcdIP" placeholder="e.g. 192.168.1.101">
+                            </div>
+                            <div class="input-group">
+                                <label for="esp32LcdPort">HTTP Port</label>
+                                <input type="text" id="esp32LcdPort" placeholder="80" value="80">
+                            </div>
+                            <button class="btn-glow" onclick="connectESP32LCD()"><i class="fas fa-plug"></i> Connect & Test</button>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3><i class="fas fa-paper-plane"></i> Push to LCD Display</h3>
+                        </div>
+                        <p class="panel-subtitle">Manually send a student's attendance status to the ESP32 LCD display.</p>
+                        <form id="pushToLcdForm" class="form-grid-3" style="margin-bottom:20px;">
+                            <div class="input-group">
+                                <label for="lcdStudentSelect">Student</label>
+                                <select id="lcdStudentSelect"><option value="">Select student...</option></select>
+                            </div>
+                            <div class="input-group">
+                                <label for="lcdStatusSelect">Status</label>
+                                <select id="lcdStatusSelect">
+                                    <option value="Present">✅ Present</option>
+                                    <option value="Absent">❌ Absent</option>
+                                    <option value="Late">⏰ Late</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn-glow"><i class="fas fa-broadcast-tower"></i> Push to LCD</button>
+                        </form>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3><i class="fas fa-info-circle"></i> ESP32 Integration Guide</h3>
+                        </div>
+                        <div class="esp32-guide">
+                            <div class="guide-step">
+                                <div class="step-number">1</div>
+                                <div>
+                                    <strong>ESP32-CAM Setup</strong>
+                                    <p>Flash the ESP32-CAM with the CameraWebServer sketch. Connect it to your WiFi network. Enter its IP:PORT in the ESP32 Camera tab.</p>
+                                </div>
+                            </div>
+                            <div class="guide-step">
+                                <div class="step-number">2</div>
+                                <div>
+                                    <strong>ESP32 LCD Setup</strong>
+                                    <p>Flash the ESP32 with the provided Arduino sketch. It will poll <code>GET /api/hw/esp32/attendance</code> every 5 seconds to receive the latest attendance entry.</p>
+                                </div>
+                            </div>
+                            <div class="guide-step">
+                                <div class="step-number">3</div>
+                                <div>
+                                    <strong>Data Flow</strong>
+                                    <p>When attendance is marked (face or manual), the server stores the record. The ESP32 LCD polls the API and displays: <code>Name: John | Status: Present</code> on the LCD.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ════════════════════════════════════════ -->
+                <!-- ALERTS -->
+                <!-- ════════════════════════════════════════ -->
+                <section id="view-alerts" class="view-section">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3><i class="fas fa-bell"></i> System Notifications</h3>
+                        </div>
+                        <div id="alertsList" class="alerts-list">
+                            <div class="alert-item alert-info"><i class="fas fa-info-circle"></i><span>System started. All modules online.</span></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ════════════════════════════════════════ -->
+                <!-- AUDIT TRAIL -->
+                <!-- ════════════════════════════════════════ -->
+                <section id="view-activity" class="view-section">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3><i class="fas fa-history"></i> Audit Trail</h3>
+                        </div>
+                        <div class="audit-log" id="auditLog">
+                            <div class="audit-entry"><span class="audit-time">System Boot</span><span class="audit-msg">All subsystems initialized</span></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ════════════════════════════════════════ -->
+                <!-- SETTINGS -->
+                <!-- ════════════════════════════════════════ -->
+                <section id="view-settings" class="view-section">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3><i class="fas fa-cog"></i> System Configuration</h3>
+                        </div>
+                        <div class="settings-grid">
+                            <label class="setting-item"><input type="checkbox" checked> Enforce Liveness Detection (Blink)</label>
+                            <label class="setting-item"><input type="checkbox"> Auto-email Daily Reports</label>
+                            <label class="setting-item"><input type="checkbox" checked> Enable Twilio SMS Alerts</label>
+                            <label class="setting-item"><input type="checkbox" checked> AI Predictive Engine Active</label>
+                            <label class="setting-item"><input type="checkbox"> Parent WhatsApp Bot (Beta)</label>
+                        </div>
+                        <button class="btn-glow" style="margin-top:25px;"><i class="fas fa-save"></i> Save Configuration</button>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="/static/js/admin_spa.js"></script>
+</body>
+</html>

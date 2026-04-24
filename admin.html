@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>EduTrack — Admin Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --ink: #0a0e1a;
+      --paper: #f5f3ee;
+      --accent: #1a6bff;
+      --accent2: #ff5c35;
+      --green: #10b981;
+      --yellow: #f59e0b;
+      --muted: #6b7280;
+      --border: #e2e0d8;
+      --sidebar-w: 240px;
+      --card-bg: #ffffff;
+    }
+    html, body { height: 100%; font-family: 'Sora', sans-serif; background: var(--paper); color: var(--ink); }
+
+    /* ── Layout ── */
+    .layout { display: flex; min-height: 100vh; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--ink);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 100;
+    }
+    .sidebar-brand {
+      padding: 28px 24px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .sidebar-brand .logo { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+    .sidebar-brand .logo span { color: var(--accent); }
+    .sidebar-brand .role-badge {
+      display: inline-block;
+      margin-top: 6px;
+      background: rgba(26,107,255,0.2);
+      color: #7eb3ff;
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+
+    .nav { padding: 16px 0; flex: 1; }
+    .nav-section { padding: 8px 24px 4px; font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: rgba(255,255,255,0.3); font-family: 'JetBrains Mono', monospace; }
+    .nav-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 24px;
+      cursor: pointer;
+      font-size: 14px;
+      color: rgba(255,255,255,0.6);
+      transition: all 0.15s;
+      border-left: 3px solid transparent;
+    }
+    .nav-item:hover { color: white; background: rgba(255,255,255,0.05); }
+    .nav-item.active { color: white; border-left-color: var(--accent); background: rgba(26,107,255,0.12); }
+    .nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+
+    .sidebar-footer {
+      padding: 16px 24px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      font-size: 12px;
+      color: rgba(255,255,255,0.4);
+    }
+    .logout-btn {
+      margin-top: 8px;
+      background: rgba(255,92,53,0.15);
+      color: #ff7a5c;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-family: 'Sora', sans-serif;
+      width: 100%;
+      transition: background 0.2s;
+    }
+    .logout-btn:hover { background: rgba(255,92,53,0.25); }
+
+    /* ── Main Content ── */
+    .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; }
+
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 32px;
+      background: white;
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 50;
+    }
+    .topbar h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+    .topbar .date-display {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--muted);
+      background: var(--paper);
+      padding: 6px 14px;
+      border-radius: 6px;
+    }
+
+    .content { padding: 28px 32px; flex: 1; }
+
+    /* ── Sections ── */
+    .section { display: none; }
+    .section.active { display: block; }
+
+    /* ── Stats ── */
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+    .stat-card {
+      background: var(--card-bg);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 22px;
+      transition: transform 0.2s;
+    }
+    .stat-card:hover { transform: translateY(-2px); }
+    .stat-label { font-size: 11px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: var(--muted); font-family: 'JetBrains Mono', monospace; margin-bottom: 10px; }
+    .stat-value { font-size: 36px; font-weight: 700; letter-spacing: -1px; }
+    .stat-card.blue .stat-value { color: var(--accent); }
+    .stat-card.green .stat-value { color: var(--green); }
+    .stat-card.orange .stat-value { color: var(--accent2); }
+    .stat-card.yellow .stat-value { color: var(--yellow); }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--card-bg);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--border);
+    }
+    .card-title { font-size: 15px; font-weight: 600; }
+
+    /* ── Tables ── */
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      text-align: left;
+      padding: 12px 16px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--paper);
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 13px 16px;
+      font-size: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafaf8; }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-green { background: #d1fae5; color: #065f46; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-yellow { background: #fef3c7; color: #92400e; }
+    .badge-blue { background: #dbeafe; color: #1e40af; }
+
+    /* ── Buttons ── */
+    .btn {
+      padding: 9px 18px;
+      border-radius: 8px;
+      font-family: 'Sora', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s;
+    }
+    .btn-primary { background: var(--ink); color: white; }
+    .btn-primary:hover { background: #1a2540; }
+    .btn-accent { background: var(--accent); color: white; }
+    .btn-accent:hover { background: #1558d6; }
+    .btn-success { background: var(--green); color: white; }
+    .btn-success:hover { background: #059669; }
+    .btn-danger { background: var(--accent2); color: white; }
+    .btn-danger:hover { background: #e04a27; }
+    .btn-sm { padding: 5px 12px; font-size: 12px; }
+    .btn-ghost { background: transparent; border: 1.5px solid var(--border); color: var(--ink); }
+    .btn-ghost:hover { border-color: var(--ink); }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 200;
+      display: none;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: white;
+      border-radius: 16px;
+      width: 480px;
+      max-width: 95vw;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    }
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-title { font-size: 17px; font-weight: 700; }
+    .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--muted); line-height: 1; }
+    .modal-body { padding: 24px; }
+    .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+
+    .form-group { margin-bottom: 16px; }
+    label { display: block; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; }
+    input, select, textarea {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-family: 'Sora', sans-serif;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+      background: white;
+      color: var(--ink);
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+    /* ── Toast ── */
+    .toast-container { position: fixed; top: 20px; right: 20px; z-index: 999; display: flex; flex-direction: column; gap: 10px; }
+    .toast {
+      background: var(--ink);
+      color: white;
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-size: 13px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      animation: slideIn 0.3s ease;
+      max-width: 320px;
+    }
+    .toast.success { background: var(--green); }
+    .toast.error { background: var(--accent2); }
+    @keyframes slideIn { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    .empty-state { padding: 40px; text-align: center; color: var(--muted); font-size: 14px; }
+
+    /* ── Attendance filter bar ── */
+    .filter-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .filter-bar input, .filter-bar select { width: auto; flex: 1; min-width: 150px; }
+  </style>
+</head>
+<body>
+
+<div class="layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="logo">Edu<span>Track</span></div>
+      <div class="role-badge" id="userRole">admin</div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section">Overview</div>
+      <div class="nav-item active" onclick="showSection('dashboard')">
+        <span class="icon">📊</span> Dashboard
+      </div>
+      <div class="nav-section">Management</div>
+      <div class="nav-item" onclick="showSection('students')">
+        <span class="icon">👥</span> Students
+      </div>
+      <div class="nav-item" onclick="showSection('attendance')">
+        <span class="icon">✅</span> Attendance
+      </div>
+      <div class="nav-item" onclick="showSection('marks')">
+        <span class="icon">📝</span> Marks
+      </div>
+      <div class="nav-item" onclick="showSection('leaves')">
+        <span class="icon">📋</span> Leave Requests
+      </div>
+      <div class="nav-section">Tools</div>
+      <div class="nav-item" onclick="window.location.href='/attendance-page'">
+        <span class="icon">📷</span> Face Recognition
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div id="sidebarUsername">Loading...</div>
+      <button class="logout-btn" onclick="logout()">Sign Out</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="topbar">
+      <h1 id="pageTitle">Dashboard</h1>
+      <div class="date-display" id="dateDisplay">—</div>
+    </div>
+
+    <div class="content">
+      <!-- Dashboard Section -->
+      <div class="section active" id="section-dashboard">
+        <div class="stats-grid">
+          <div class="stat-card blue">
+            <div class="stat-label">Total Students</div>
+            <div class="stat-value" id="stat-students">—</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-label">Present Today</div>
+            <div class="stat-value" id="stat-present">—</div>
+          </div>
+          <div class="stat-card orange">
+            <div class="stat-label">Pending Leaves</div>
+            <div class="stat-value" id="stat-leaves">—</div>
+          </div>
+          <div class="stat-card yellow">
+            <div class="stat-label">Marks Records</div>
+            <div class="stat-value" id="stat-marks">—</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Today's Attendance</div>
+            <a href="/attendance-page"><button class="btn btn-accent btn-sm">📷 Mark via Face</button></a>
+          </div>
+          <table>
+            <thead><tr><th>Student</th><th>Roll No</th><th>Class</th><th>Status</th><th>Method</th><th>Time</th></tr></thead>
+            <tbody id="today-attendance-body">
+              <tr><td colspan="6" class="empty-state">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Students Section -->
+      <div class="section" id="section-students">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">All Students</div>
+            <button class="btn btn-primary" onclick="openStudentModal()">+ Add Student</button>
+          </div>
+          <table>
+            <thead><tr><th>#</th><th>Name</th><th>Roll No</th><th>Class</th><th>Parent</th><th>Contact</th><th>Actions</th></tr></thead>
+            <tbody id="students-body">
+              <tr><td colspan="7" class="empty-state">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Attendance Section -->
+      <div class="section" id="section-attendance">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Attendance Records</div>
+            <div class="filter-bar">
+              <input type="date" id="att-filter-date" onchange="loadAttendance()"/>
+              <button class="btn btn-ghost btn-sm" onclick="document.getElementById('att-filter-date').value=''; loadAttendance()">Clear</button>
+            </div>
+          </div>
+          <table>
+            <thead><tr><th>Student</th><th>Roll No</th><th>Class</th><th>Date</th><th>Status</th><th>Method</th></tr></thead>
+            <tbody id="attendance-body">
+              <tr><td colspan="6" class="empty-state">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Marks Section -->
+      <div class="section" id="section-marks">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Academic Marks</div>
+            <button class="btn btn-primary" onclick="openMarksModal()">+ Add Marks</button>
+          </div>
+          <table>
+            <thead><tr><th>Student</th><th>Subject</th><th>Obtained</th><th>Total</th><th>%</th><th>Exam Type</th><th>Date</th></tr></thead>
+            <tbody id="marks-body">
+              <tr><td colspan="7" class="empty-state">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Leaves Section -->
+      <div class="section" id="section-leaves">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Leave Requests</div>
+          </div>
+          <table>
+            <thead><tr><th>Student</th><th>From</th><th>To</th><th>Reason</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="leaves-body">
+              <tr><td colspan="6" class="empty-state">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Add Student Modal -->
+<div class="modal-overlay" id="studentModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add New Student</div>
+      <button class="modal-close" onclick="closeModal('studentModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label>Full Name *</label><input id="s-name" placeholder="Student full name"/></div>
+      <div class="form-row">
+        <div class="form-group"><label>Roll Number *</label><input id="s-roll" placeholder="e.g. S006"/></div>
+        <div class="form-group"><label>Class *</label><input id="s-class" placeholder="e.g. 10-A"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Parent Name</label><input id="s-parent" placeholder="Parent/Guardian name"/></div>
+        <div class="form-group"><label>Contact</label><input id="s-contact" placeholder="Phone number"/></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('studentModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="addStudent()">Add Student</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Marks Modal -->
+<div class="modal-overlay" id="marksModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add Marks</div>
+      <button class="modal-close" onclick="closeModal('marksModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Student *</label>
+        <select id="m-student"><option value="">Select student...</option></select>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Subject *</label><input id="m-subject" placeholder="e.g. Mathematics"/></div>
+        <div class="form-group"><label>Exam Type</label>
+          <select id="m-exam-type">
+            <option value="unit_test">Unit Test</option>
+            <option value="midterm">Midterm</option>
+            <option value="final">Final Exam</option>
+            <option value="assignment">Assignment</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Marks Obtained *</label><input id="m-obtained" type="number" placeholder="0"/></div>
+        <div class="form-group"><label>Total Marks</label><input id="m-total" type="number" value="100"/></div>
+      </div>
+      <div class="form-group"><label>Exam Date</label><input id="m-date" type="date"/></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('marksModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="addMarks()">Save Marks</button>
+    </div>
+  </div>
+</div>
+
+<!-- Attendance Modal -->
+<div class="modal-overlay" id="attendanceModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Mark Attendance</div>
+      <button class="modal-close" onclick="closeModal('attendanceModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Student *</label>
+        <select id="a-student"><option value="">Select student...</option></select>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Date</label><input id="a-date" type="date"/></div>
+        <div class="form-group"><label>Status</label>
+          <select id="a-status">
+            <option value="present">Present</option>
+            <option value="absent">Absent</option>
+            <option value="late">Late</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('attendanceModal')">Cancel</button>
+      <button class="btn btn-success" onclick="markAttendanceManual()">Mark Attendance</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API = '';
+  let students = [];
+
+  // ── Init ──
+  const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+  if (!user.id) window.location.href = '/';
+  document.getElementById('sidebarUsername').textContent = user.username || 'User';
+  document.getElementById('userRole').textContent = user.role || 'admin';
+  document.getElementById('dateDisplay').textContent = new Date().toLocaleDateString('en-IN', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+  // Set today's date as default
+  document.getElementById('a-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('m-date').value = new Date().toISOString().split('T')[0];
+
+  // ── Navigation ──
+  function showSection(name) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById(`section-${name}`).classList.add('active');
+    event.currentTarget.classList.add('active');
+    const titles = {dashboard:'Dashboard',students:'Students',attendance:'Attendance Records',marks:'Academic Marks',leaves:'Leave Requests'};
+    document.getElementById('pageTitle').textContent = titles[name] || name;
+
+    if (name === 'students') loadStudents();
+    if (name === 'attendance') loadAttendance();
+    if (name === 'marks') loadMarks();
+    if (name === 'leaves') loadLeaves();
+  }
+
+  // ── Toast ──
+  function toast(msg, type = 'info') {
+    const t = document.createElement('div');
+    t.className = `toast ${type}`;
+    t.textContent = msg;
+    document.getElementById('toastContainer').appendChild(t);
+    setTimeout(() => t.remove(), 3500);
+  }
+
+  // ── Stats ──
+  async function loadStats() {
+    try {
+      const res = await fetch(`${API}/stats`);
+      const data = await res.json();
+      if (data.success) {
+        document.getElementById('stat-students').textContent = data.stats.total_students;
+        document.getElementById('stat-present').textContent = data.stats.present_today;
+        document.getElementById('stat-leaves').textContent = data.stats.pending_leaves;
+        document.getElementById('stat-marks').textContent = data.stats.total_marks_records;
+      }
+    } catch(e) { console.error(e); }
+  }
+
+  // ── Today Attendance ──
+  async function loadTodayAttendance() {
+    const today = new Date().toISOString().split('T')[0];
+    try {
+      const res = await fetch(`${API}/attendance?date=${today}`);
+      const data = await res.json();
+      const tbody = document.getElementById('today-attendance-body');
+      if (!data.attendance?.length) {
+        tbody.innerHTML = `<tr><td colspan="6" class="empty-state">No attendance marked yet today</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = data.attendance.map(r => `
+        <tr>
+          <td>${r.name}</td>
+          <td><span style="font-family:'JetBrains Mono',monospace;font-size:12px;">${r.roll_number}</span></td>
+          <td>${r.class}</td>
+          <td>${badgeStatus(r.status)}</td>
+          <td>${r.method === 'face_recognition' ? '🤖 AI' : '✋ Manual'}</td>
+          <td style="font-size:12px;color:var(--muted);">${r.marked_at ? r.marked_at.split('T')[1]?.substring(0,5) : '—'}</td>
+        </tr>
+      `).join('');
+    } catch(e) { console.error(e); }
+  }
+
+  // ── Students ──
+  async function loadStudents() {
+    try {
+      const res = await fetch(`${API}/students`);
+      const data = await res.json();
+      students = data.students || [];
+      const tbody = document.getElementById('students-body');
+      if (!students.length) { tbody.innerHTML = `<tr><td colspan="7" class="empty-state">No students found</td></tr>`; return; }
+      tbody.innerHTML = students.map((s, i) => `
+        <tr>
+          <td>${i+1}</td>
+          <td><strong>${s.name}</strong></td>
+          <td><span style="font-family:'JetBrains Mono',monospace;font-size:12px;">${s.roll_number}</span></td>
+          <td><span class="badge badge-blue">${s.class}</span></td>
+          <td>${s.parent_name || '—'}</td>
+          <td style="font-size:13px;color:var(--muted);">${s.contact || '—'}</td>
+          <td>
+            <button class="btn btn-sm btn-ghost" onclick="markAttendanceFor(${s.id}, '${s.name}')">✅ Attend</button>
+          </td>
+        </tr>
+      `).join('');
+      populateStudentSelects();
+    } catch(e) { toast('Failed to load students', 'error'); }
+  }
+
+  function populateStudentSelects() {
+    const opts = students.map(s => `<option value="${s.id}">${s.name} (${s.roll_number})</option>`).join('');
+    document.getElementById('m-student').innerHTML = `<option value="">Select student...</option>` + opts;
+    document.getElementById('a-student').innerHTML = `<option value="">Select student...</option>` + opts;
+  }
+
+  async function addStudent() {
+    const name = document.getElementById('s-name').value.trim();
+    const roll = document.getElementById('s-roll').value.trim();
+    const cls = document.getElementById('s-class').value.trim();
+    const parent = document.getElementById('s-parent').value.trim();
+    const contact = document.getElementById('s-contact').value.trim();
+    if (!name || !roll || !cls) { toast('Name, roll number and class are required', 'error'); return; }
+
+    try {
+      const res = await fetch(`${API}/students`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name,roll_number:roll,class:cls,parent_name:parent,contact}) });
+      const data = await res.json();
+      if (data.success) { toast('Student added successfully!', 'success'); closeModal('studentModal'); loadStudents(); loadStats(); }
+      else toast(data.message, 'error');
+    } catch(e) { toast('Error adding student', 'error'); }
+  }
+
+  function openStudentModal() {
+    ['s-name','s-roll','s-class','s-parent','s-contact'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('studentModal').classList.add('open');
+  }
+
+  // ── Attendance ──
+  async function loadAttendance() {
+    const filterDate = document.getElementById('att-filter-date').value;
+    let url = `${API}/attendance`;
+    if (filterDate) url += `?date=${filterDate}`;
+
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      const tbody = document.getElementById('attendance-body');
+      if (!data.attendance?.length) { tbody.innerHTML = `<tr><td colspan="6" class="empty-state">No records found</td></tr>`; return; }
+      tbody.innerHTML = data.attendance.map(r => `
+        <tr>
+          <td><strong>${r.name}</strong></td>
+          <td><span style="font-family:'JetBrains Mono',monospace;font-size:12px;">${r.roll_number}</span></td>
+          <td>${r.class}</td>
+          <td>${r.date}</td>
+          <td>${badgeStatus(r.status)}</td>
+          <td>${r.method === 'face_recognition' ? '🤖 AI' : '✋ Manual'}</td>
+        </tr>
+      `).join('');
+    } catch(e) { toast('Failed to load attendance', 'error'); }
+  }
+
+  function markAttendanceFor(id, name) {
+    document.getElementById('a-student').value = id;
+    document.getElementById('attendanceModal').classList.add('open');
+  }
+
+  async function markAttendanceManual() {
+    const student_id = document.getElementById('a-student').value;
+    const date = document.getElementById('a-date').value;
+    const status = document.getElementById('a-status').value;
+    if (!student_id) { toast('Please select a student', 'error'); return; }
+
+    try {
+      const res = await fetch(`${API}/attendance`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({student_id, date, status, method:'manual'}) });
+      const data = await res.json();
+      if (data.success) { toast('Attendance marked!', 'success'); closeModal('attendanceModal'); loadTodayAttendance(); loadStats(); }
+      else toast(data.message, 'error');
+    } catch(e) { toast('Error marking attendance', 'error'); }
+  }
+
+  // ── Marks ──
+  async function loadMarks() {
+    await loadStudents(); // Ensure students are loaded
+    try {
+      const res = await fetch(`${API}/marks`);
+      const data = await res.json();
+      const tbody = document.getElementById('marks-body');
+      if (!data.marks?.length) { tbody.innerHTML = `<tr><td colspan="7" class="empty-state">No marks records</td></tr>`; return; }
+      tbody.innerHTML = data.marks.map(r => {
+        const pct = ((r.marks_obtained / r.total_marks) * 100).toFixed(1);
+        const cls = pct >= 75 ? 'badge-green' : pct >= 50 ? 'badge-yellow' : 'badge-red';
+        return `<tr>
+          <td><strong>${r.name}</strong></td>
+          <td>${r.subject}</td>
+          <td>${r.marks_obtained}</td>
+          <td>${r.total_marks}</td>
+          <td><span class="badge ${cls}">${pct}%</span></td>
+          <td>${r.exam_type}</td>
+          <td style="font-size:13px;color:var(--muted);">${r.exam_date || '—'}</td>
+        </tr>`;
+      }).join('');
+    } catch(e) { toast('Failed to load marks', 'error'); }
+  }
+
+  function openMarksModal() {
+    if (!students.length) loadStudents();
+    document.getElementById('marksModal').classList.add('open');
+  }
+
+  async function addMarks() {
+    const student_id = document.getElementById('m-student').value;
+    const subject = document.getElementById('m-subject').value.trim();
+    const marks_obtained = parseFloat(document.getElementById('m-obtained').value);
+    const total_marks = parseFloat(document.getElementById('m-total').value) || 100;
+    const exam_type = document.getElementById('m-exam-type').value;
+    const exam_date = document.getElementById('m-date').value;
+    if (!student_id || !subject || isNaN(marks_obtained)) { toast('All required fields must be filled', 'error'); return; }
+
+    try {
+      const res = await fetch(`${API}/marks`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({student_id,subject,marks_obtained,total_marks,exam_type,exam_date}) });
+      const data = await res.json();
+      if (data.success) { toast('Marks saved!', 'success'); closeModal('marksModal'); loadMarks(); loadStats(); }
+      else toast(data.message, 'error');
+    } catch(e) { toast('Error saving marks', 'error'); }
+  }
+
+  // ── Leaves ──
+  async function loadLeaves() {
+    try {
+      const res = await fetch(`${API}/leave`);
+      const data = await res.json();
+      const tbody = document.getElementById('leaves-body');
+      if (!data.leaves?.length) { tbody.innerHTML = `<tr><td colspan="6" class="empty-state">No leave requests</td></tr>`; return; }
+      tbody.innerHTML = data.leaves.map(r => `
+        <tr>
+          <td><strong>${r.name}</strong></td>
+          <td>${r.from_date}</td>
+          <td>${r.to_date}</td>
+          <td style="max-width:180px;font-size:13px;">${r.reason || '—'}</td>
+          <td>${badgeLeave(r.status)}</td>
+          <td>
+            ${r.status === 'pending' ? `
+              <button class="btn btn-sm btn-success" onclick="updateLeave(${r.id},'approved')">Approve</button>
+              <button class="btn btn-sm btn-danger" style="margin-left:6px;" onclick="updateLeave(${r.id},'rejected')">Reject</button>
+            ` : '—'}
+          </td>
+        </tr>
+      `).join('');
+    } catch(e) { toast('Failed to load leaves', 'error'); }
+  }
+
+  async function updateLeave(id, status) {
+    try {
+      const res = await fetch(`${API}/leave`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({leave_id:id, status}) });
+      const data = await res.json();
+      if (data.success) { toast(`Leave ${status}!`, 'success'); loadLeaves(); loadStats(); }
+      else toast(data.message, 'error');
+    } catch(e) { toast('Error updating leave', 'error'); }
+  }
+
+  // ── Helpers ──
+  function badgeStatus(s) {
+    const map = {present:'badge-green',absent:'badge-red',late:'badge-yellow'};
+    return `<span class="badge ${map[s]||'badge-blue'}">${s}</span>`;
+  }
+  function badgeLeave(s) {
+    const map = {approved:'badge-green',rejected:'badge-red',pending:'badge-yellow'};
+    return `<span class="badge ${map[s]||'badge-blue'}">${s}</span>`;
+  }
+
+  function openModal(id) { document.getElementById(id).classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+  function logout() {
+    sessionStorage.clear();
+    window.location.href = '/';
+  }
+
+  // Close modal on outside click
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.remove('open'); });
+  });
+
+  // ── Initial Load ──
+  loadStats();
+  loadTodayAttendance();
+  loadStudents();
+</script>
+</body>
+</html>

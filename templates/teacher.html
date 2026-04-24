@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Portal - AttendAI</title>
+    <meta name="description" content="AttendAI Teacher Portal — Smart Attendance, Academic Management & Classroom Operations">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/admin.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-icon" style="background:linear-gradient(135deg,#f59e0b,#ef4444);"><i class="fas fa-chalkboard-teacher"></i></div>
+                <span style="background:linear-gradient(135deg,#f59e0b,#ef4444);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Instructor</span>
+            </div>
+            <div class="nav-links">
+                <div class="nav-category">Main Console</div>
+                <a class="nav-item active" data-target="view-dashboard"><i class="fas fa-th-large"></i> Dashboard</a>
+                <a class="nav-item" data-target="view-attendance-terminal"><i class="fas fa-camera"></i> Face Scanner</a>
+                <a class="nav-item" data-target="view-manual-att"><i class="fas fa-clipboard-check"></i> Mark Attendance</a>
+
+                <div class="nav-category">Classroom Ops</div>
+                <a class="nav-item" data-target="view-class"><i class="fas fa-users"></i> Class Roster</a>
+                <a class="nav-item" data-target="view-performance"><i class="fas fa-pen-fancy"></i> Marks Entry</a>
+                <a class="nav-item" data-target="view-leaves"><i class="fas fa-file-alt"></i> Leave Requests</a>
+
+                <div class="nav-category">Analysis</div>
+                <a class="nav-item" data-target="view-history"><i class="fas fa-history"></i> Auth History</a>
+                <a class="nav-item" data-target="view-calendar"><i class="fas fa-calendar-alt"></i> Calendar</a>
+                <a class="nav-item" data-target="view-analytics"><i class="fas fa-chart-line"></i> Analytics</a>
+
+                <div class="nav-category">Communication</div>
+                <a class="nav-item" data-target="view-comms"><i class="fas fa-paper-plane"></i> Messages</a>
+                <a class="nav-item" data-target="view-alerts"><i class="fas fa-bell"></i> Alerts</a>
+                <a class="nav-item" data-target="view-settings"><i class="fas fa-cog"></i> Settings</a>
+            </div>
+            <div class="sidebar-footer">
+                <div class="user-avatar"><i class="fas fa-user-circle"></i></div>
+                <div class="user-info">
+                    <span class="user-name" id="sidebarUserName">Teacher</span>
+                    <span class="user-role">Instructor</span>
+                </div>
+            </div>
+        </nav>
+
+        <main class="main-area">
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="sidebar-toggle" id="sidebarToggle"><i class="fas fa-bars"></i></button>
+                    <h1 id="currentViewTitle">Dashboard</h1>
+                </div>
+                <div class="topbar-right">
+                    <div class="status-pill" id="networkStatus">
+                        <div class="status-dot"></div> <span id="networkText">Online</span>
+                    </div>
+                    <div class="theme-switch-wrapper">
+                        <label class="theme-switch" for="checkbox">
+                            <input type="checkbox" id="checkbox" />
+                            <div class="slider round"><i class="fas fa-sun sun-icon"></i><i class="fas fa-moon moon-icon"></i></div>
+                        </label>
+                    </div>
+                    <button class="topbar-btn danger-btn" onclick="logout()" title="Logout"><i class="fas fa-sign-out-alt"></i></button>
+                </div>
+            </header>
+
+            <div class="view-container">
+
+                <!-- ═══ DASHBOARD ═══ -->
+                <section id="view-dashboard" class="view-section active">
+                    <div class="kpi-grid">
+                        <div class="kpi-card kpi-green">
+                            <div class="kpi-icon"><i class="fas fa-check-circle"></i></div>
+                            <h3 id="kp_present">--</h3><p>Present Today</p>
+                        </div>
+                        <div class="kpi-card kpi-red">
+                            <div class="kpi-icon"><i class="fas fa-times-circle"></i></div>
+                            <h3 id="kp_absent">--</h3><p>Absent</p>
+                        </div>
+                        <div class="kpi-card kpi-amber">
+                            <div class="kpi-icon"><i class="fas fa-clock"></i></div>
+                            <h3 id="kp_late">--</h3><p>Late / Leave</p>
+                        </div>
+                        <div class="kpi-card kpi-cyan">
+                            <div class="kpi-icon"><i class="fas fa-user-graduate"></i></div>
+                            <h3 id="kp_total">--</h3><p>Total Students</p>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-grid">
+                        <div class="panel chart-panel">
+                            <div class="panel-header"><h3><i class="fas fa-chart-area"></i> Weekly Attendance</h3></div>
+                            <div class="chart-wrapper"><canvas id="teacherWeeklyChart"></canvas></div>
+                        </div>
+                        <div class="panel">
+                            <div class="panel-header"><h3><i class="fas fa-bolt"></i> Quick Actions</h3></div>
+                            <div class="quick-actions-grid">
+                                <button class="action-card" data-goto="view-attendance-terminal"><i class="fas fa-camera"></i><span>Face Scan</span></button>
+                                <button class="action-card" data-goto="view-manual-att"><i class="fas fa-clipboard-check"></i><span>Mark Attendance</span></button>
+                                <button class="action-card" data-goto="view-performance"><i class="fas fa-pen"></i><span>Enter Marks</span></button>
+                                <button class="action-card" data-goto="view-leaves"><i class="fas fa-file-alt"></i><span>Leave Requests</span></button>
+                                <button class="action-card" data-goto="view-comms"><i class="fas fa-paper-plane"></i><span>Message Parent</span></button>
+                                <button class="action-card" data-goto="view-class"><i class="fas fa-list"></i><span>Class Roster</span></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-header"><h3><i class="fas fa-exclamation-triangle"></i> Today's Alerts</h3></div>
+                        <div id="teacherAlerts" class="alerts-list">
+                            <div class="alert-item alert-warning"><i class="fas fa-exclamation-circle"></i><span>3 students below 75% attendance threshold</span></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ═══ FACE SCANNER ═══ -->
+                <section id="view-attendance-terminal" class="view-section">
+                    <div class="panel face-panel">
+                        <div class="face-panel-grid">
+                            <div>
+                                <div class="panel-header"><h3><i class="fas fa-camera"></i> Classroom Scanner</h3></div>
+                                <p class="panel-subtitle">AI-powered face recognition with anti-cheat liveness detection.</p>
+                                <button class="btn-glow" id="startAttCam" style="margin-top:16px;"><i class="fas fa-video"></i> Wake Scanner</button>
+                                <p id="attMsg" style="margin-top:12px;font-weight:600;"></p>
+                                <div style="margin-top:20px;">
+                                    <div class="panel-header"><h3><i class="fas fa-list-check"></i> Marked Queue</h3></div>
+                                    <ul id="markedList" class="audit-log"></ul>
+                                </div>
+                            </div>
+                            <div class="camera-preview">
+                                <video id="attVideo" autoplay muted></video>
+                                <div id="scanGuide" class="scan-guide" style="display:none;"></div>
+                                <div id="attPlaceholder" class="cam-placeholder">
+                                    <i class="fas fa-video-slash"></i>
+                                    <span>Scanner Sleeping</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ═══ MANUAL ATTENDANCE ═══ -->
+                <section id="view-manual-att" class="view-section">
+                    <div class="panel">
+                        <div class="panel-header"><h3><i class="fas fa-clipboard-check"></i> Manual Attendance Entry</h3></div>
+                        <form id="manualAttForm" class="form-grid-3">
+                            <div class="input-group">
+                                <label for="attStudentId">Student ID / Roll No</label>
+                                <input type="text" id="attStudentId" placeholder="e.g. 1 or S001" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="attStatus">Status</label>
+                                <select id="attStatus">
+                                    <option value="present">Present</option>
+                                    <option value="absent">Absent</option>
+                                    <option value="late">Late</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn-glow"><i class="fas fa-check-circle"></i> Log Entry</button>
+                        </form>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-header"><h3><i class="fas fa-table"></i> Today's Log</h3></div>
+                        <table>
+                            <thead><tr><th>Student ID</th><th>Name</th><th>Status</th><th>Time</th></tr></thead>
+                            <tbody id="teacherAttLog"><tr><td colspan="4" class="empty-state">No entries yet</td></tr></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- ═══ CLASS ROSTER ═══ -->
+                <section id="view-class" class="view-section">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3><i class="fas fa-users"></i> Class Roster</h3>
+                            <div class="search-box">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="rosterSearch" placeholder="Search students...">
+                            </div>
+                        </div>
+                        <table>
+                            <thead><tr><th>ID</th><th>Name</th><th>Class</th><th>Today</th></tr></thead>
+                            <tbody id="classRosterBody"><tr><td colspan="4" class="empty-state"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- ═══ MARKS ENTRY ═══ -->
+                <section id="view-performance" class="view-section">
+                    <div class="panel">
+                        <div class="panel-header"><h3><i class="fas fa-pen-fancy"></i> Bulk Marks Entry</h3></div>
+                        <form id="marksForm" class="form-grid">
+                            <div class="input-group">
+                                <label for="m_studentId">Student ID</label>
+                                <input type="text" id="m_studentId" placeholder="e.g. 1" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="m_subject">Subject</label>
+                                <input type="text" id="m_subject" placeholder="Physics" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="m_marks">Marks Obtained</label>
+                                <input type="number" id="m_marks" placeholder="85" min="0" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="m_total">Total</label>
+                                <input type="number" id="m_total" value="100" min="1" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="m_exam">Exam Type</label>
+                                <select id="m_exam">
+                                    <option value="Mid-Term">Mid-Term</option>
+                                    <option value="Final">Final</option>
+                                    <option value="Unit Test">Unit Test</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn-glow"><i class="fas fa-save"></i> Submit Marks</button>
+                        </form>
+                    </div>
+                    <div class="panel chart-panel">
+                        <div class="panel-header"><h3><i class="fas fa-chart-bar"></i> Class Performance</h3></div>
+                        <div class="chart-wrapper" style="height:280px;"><canvas id="gradeChart"></canvas></div>
+                    </div>
+                </section>
+
+                <!-- ═══ LEAVE REQUESTS ═══ -->
+                <section id="view-leaves" class="view-section">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3><i class="fas fa-file-alt"></i> Pending Leave Requests</h3>
+                            <span class="badge badge-pending" id="leaveCountBadge">0 Pending</span>
+                        </div>
+                        <table>
+                            <thead><tr><th>Student</th><th>From</th><th>To</th><th>Reason</th><th>Actions</th></tr></thead>
+                            <tbody id="leaveQueue"><tr><td colspan="5" class="empty-state">No pending requests</td></tr></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- ═══ AUTH HISTORY ═══ -->
+                <section id="view-history" class="view-section">
+                    <div class="panel">
+                        <div class="panel-header"><h3><i class="fas fa-history"></i> Face Auth History</h3></div>
+                        <table>
+                            <thead><tr><th>Time</th><th>Student</th><th>Confidence</th></tr></thead>
+                            <tbody id="authHistoryBody"><tr><td colspan="3" class="empty-state">No records yet</td></tr></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- ═══ CALENDAR ═══ -->
+                <section id="view-calendar" class="view-section">
+                    <div class="panel">
+                        <div class="panel-header"><h3><i class="fas fa-calendar-alt"></i> Attendance Calendar</h3></div>
+                        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:16px;" id="calGrid"></div>
+                        <div style="margin-top:16px;display:flex;gap:16px;font-size:0.75rem;justify-content:center;">
+                            <span><span style="color:var(--success);">■</span> Present</span>
+                            <span><span style="color:var(--danger);">■</span> Absent</span>
+                            <span><span style="color:var(--accent);">■</span> Leave</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ═══ ANALYTICS ═══ -->
+                <section id="view-analytics" class="view-section">
+                    <div class="panel chart-panel">
+                        <div class="panel-header"><h3><i class="fas fa-chart-line"></i> Attendance Trend Analysis</h3></div>
+                        <div class="chart-wrapper" style="height:300px;"><canvas id="trendChart"></canvas></div>
+                    </div>
+                </section>
+
+                <!-- ═══ MESSAGES ═══ -->
+                <section id="view-comms" class="view-section">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3><i class="fas fa-paper-plane"></i> Direct Parent Broadcast</h3>
+                            <span class="badge badge-sent">SMS / Twilio</span>
+                        </div>
+                        <form id="smsForm" class="form-grid">
+                            <div class="input-group">
+                                <label for="smsTarget">Recipient Phone</label>
+                                <input type="text" id="smsTarget" placeholder="+91 98765 43210" required>
+                            </div>
+                            <div class="input-group full-width">
+                                <label for="smsBody">Message</label>
+                                <textarea id="smsBody" rows="4" placeholder="Compose your message..." required></textarea>
+                            </div>
+                            <button type="submit" class="btn-glow"><i class="fas fa-paper-plane"></i> Send SMS</button>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- ═══ ALERTS ═══ -->
+                <section id="view-alerts" class="view-section">
+                    <div class="panel">
+                        <div class="panel-header"><h3><i class="fas fa-bell"></i> Instructor Alerts</h3></div>
+                        <div id="alertsContainer" class="alerts-list">
+                            <div class="alert-item alert-danger"><i class="fas fa-exclamation-triangle"></i><span>Students in 10-A falling below ministry attendance threshold</span></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ═══ SETTINGS ═══ -->
+                <section id="view-settings" class="view-section">
+                    <div class="panel">
+                        <div class="panel-header"><h3><i class="fas fa-cog"></i> Portal Preferences</h3></div>
+                        <div class="settings-grid">
+                            <label class="setting-item"><input type="checkbox" checked> Auto-wake Face Scanner on class start</label>
+                            <label class="setting-item"><input type="checkbox" checked> Push notifications for absences</label>
+                            <label class="setting-item"><input type="checkbox"> Auto-send SMS for absent students</label>
+                        </div>
+                        <button class="btn-glow" style="margin-top:20px;"><i class="fas fa-save"></i> Save Preferences</button>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+
+    <!-- ═══ SUCCESS POPUP MODAL ═══ -->
+    <div id="successModal" class="modal-overlay">
+        <div class="success-card" id="successCard">
+            <div class="success-icon"><i class="fas fa-check-circle"></i></div>
+            <h2 id="successName">Student Name</h2>
+            <p id="successStatus">Marked as Present</p>
+            <div class="success-details">
+                <span id="successTime">Time: --:--</span>
+                <span id="successDate">Date: --/--/--</span>
+            </div>
+            <button class="btn-glow" onclick="closeSuccessModal()">Dismiss</button>
+        </div>
+    </div>
+
+    <div id="toastContainer" class="toast-container"></div>
+    <script src="/static/js/teacher_spa.js?v=1.1"></script>
+</body>
+</html>

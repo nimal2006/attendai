@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>EduTrack — Face Recognition</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --ink: #0a0e1a;
+      --paper: #f5f3ee;
+      --accent: #1a6bff;
+      --accent2: #ff5c35;
+      --green: #10b981;
+      --muted: #6b7280;
+      --border: #e2e0d8;
+    }
+    html, body { height: 100%; font-family: 'Sora', sans-serif; background: var(--ink); color: white; }
+
+    .page {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    /* ── Header ── */
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 40px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .header-left { display: flex; align-items: center; gap: 20px; }
+    .back-btn {
+      background: rgba(255,255,255,0.08);
+      border: none;
+      color: rgba(255,255,255,0.7);
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: 'Sora', sans-serif;
+      font-size: 13px;
+      transition: background 0.2s;
+    }
+    .back-btn:hover { background: rgba(255,255,255,0.15); color: white; }
+    .page-title { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+    .page-title span { color: var(--accent); }
+
+    .mode-tabs { display: flex; gap: 4px; background: rgba(255,255,255,0.06); padding: 4px; border-radius: 10px; }
+    .mode-tab {
+      padding: 8px 20px;
+      border-radius: 7px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.5);
+      transition: all 0.2s;
+      border: none;
+      background: none;
+      font-family: 'Sora', sans-serif;
+    }
+    .mode-tab.active { background: white; color: var(--ink); }
+
+    /* ── Content ── */
+    .content {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 0;
+      height: calc(100vh - 73px);
+    }
+
+    /* ── Camera Area ── */
+    .camera-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      position: relative;
+    }
+
+    .camera-container {
+      position: relative;
+      border-radius: 20px;
+      overflow: hidden;
+      background: #0f1420;
+      border: 2px solid rgba(255,255,255,0.08);
+      width: 100%;
+      max-width: 640px;
+      aspect-ratio: 4/3;
+    }
+
+    #videoFeed {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    #canvasCapture { display: none; }
+
+    .camera-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    /* Corner brackets */
+    .bracket {
+      position: absolute;
+      width: 40px; height: 40px;
+      border-color: var(--accent);
+      border-style: solid;
+      opacity: 0.8;
+    }
+    .bracket.tl { top: 20px; left: 20px; border-width: 3px 0 0 3px; }
+    .bracket.tr { top: 20px; right: 20px; border-width: 3px 3px 0 0; }
+    .bracket.bl { bottom: 20px; left: 20px; border-width: 0 0 3px 3px; }
+    .bracket.br { bottom: 20px; right: 20px; border-width: 0 3px 3px 0; }
+
+    .scan-line {
+      position: absolute;
+      left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      animation: scan 2.5s ease-in-out infinite;
+      display: none;
+    }
+    .scan-line.active { display: block; }
+    @keyframes scan {
+      0% { top: 20%; opacity: 1; }
+      50% { top: 80%; opacity: 0.5; }
+      100% { top: 20%; opacity: 1; }
+    }
+
+    .camera-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: rgba(255,255,255,0.3);
+    }
+    .camera-placeholder .cam-icon { font-size: 48px; opacity: 0.5; }
+    .camera-placeholder p { font-size: 14px; }
+
+    /* Status overlay */
+    .status-overlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+    }
+    .status-overlay.show { display: flex; }
+    .status-box {
+      text-align: center;
+      padding: 32px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .status-box .status-icon { font-size: 52px; margin-bottom: 12px; }
+    .status-box .status-name { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+    .status-box .status-detail { font-size: 14px; color: rgba(255,255,255,0.6); }
+    .status-box.success { border-color: rgba(16,185,129,0.5); }
+    .status-box.error { border-color: rgba(255,92,53,0.5); }
+
+    /* Controls */
+    .camera-controls {
+      display: flex;
+      gap: 14px;
+      margin-top: 24px;
+      align-items: center;
+    }
+    .btn-capture {
+      width: 70px; height: 70px;
+      border-radius: 50%;
+      border: 4px solid white;
+      background: rgba(255,255,255,0.1);
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s;
+    }
+    .btn-capture::after {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: white;
+      transition: background 0.2s;
+    }
+    .btn-capture:hover::after { background: #ddd; }
+    .btn-capture:active { transform: scale(0.95); }
+
+    .btn-start-cam {
+      padding: 14px 28px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-family: 'Sora', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-start-cam:hover { background: #1558d6; }
+
+    /* ── Sidebar Panel ── */
+    .side-panel {
+      border-left: 1px solid rgba(255,255,255,0.08);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 24px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .panel-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .panel-sub { font-size: 12px; color: rgba(255,255,255,0.4); font-family: 'JetBrains Mono', monospace; }
+
+    /* Recognition result */
+    .result-card {
+      margin: 20px;
+      padding: 20px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      min-height: 140px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      transition: all 0.3s;
+    }
+    .result-card.matched { border-color: rgba(16,185,129,0.4); background: rgba(16,185,129,0.06); }
+    .result-card.unmatched { border-color: rgba(255,92,53,0.4); background: rgba(255,92,53,0.06); }
+    .result-card.loading { border-color: rgba(26,107,255,0.4); background: rgba(26,107,255,0.06); }
+
+    .result-default { text-align: center; color: rgba(255,255,255,0.25); font-size: 13px; padding: 20px 0; }
+    .result-student-name { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+    .result-id { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: rgba(255,255,255,0.5); margin-bottom: 16px; }
+    .confidence-bar-wrap { margin-bottom: 8px; }
+    .confidence-label { display: flex; justify-content: space-between; font-size: 12px; color: rgba(255,255,255,0.5); margin-bottom: 6px; }
+    .confidence-bar {
+      height: 6px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .confidence-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: var(--green);
+      transition: width 0.5s ease;
+    }
+
+    .btn-mark-att {
+      width: 100%;
+      margin-top: 12px;
+      padding: 11px;
+      background: var(--green);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Sora', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-mark-att:hover { background: #059669; }
+    .btn-mark-att:disabled { background: rgba(255,255,255,0.15); cursor: not-allowed; }
+
+    /* Log */
+    .log-section {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .log-header { padding: 16px 20px 8px; font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.4); letter-spacing: 0.8px; text-transform: uppercase; font-family: 'JetBrains Mono', monospace; }
+    .log-list { flex: 1; overflow-y: auto; padding: 0 20px 20px; }
+    .log-item {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 13px;
+    }
+    .log-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+    .log-dot.success { background: var(--green); }
+    .log-dot.error { background: var(--accent2); }
+    .log-dot.info { background: var(--accent); }
+    .log-msg { flex: 1; color: rgba(255,255,255,0.7); }
+    .log-time { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: rgba(255,255,255,0.3); }
+
+    /* Register section */
+    .register-section { padding: 24px; display: none; }
+    .register-section.active { display: block; }
+    .reg-form { display: flex; flex-direction: column; gap: 14px; }
+    .form-group label { font-size: 11px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 6px; display: block; }
+    .form-group select, .form-group input {
+      width: 100%;
+      padding: 11px 14px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px;
+      color: white;
+      font-family: 'Sora', sans-serif;
+      font-size: 14px;
+      outline: none;
+    }
+    .form-group select:focus, .form-group input:focus { border-color: var(--accent); }
+    .form-group select option { background: #1a1f2e; }
+
+    .btn-register {
+      width: 100%;
+      padding: 13px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Sora', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 4px;
+    }
+    .btn-register:hover { background: #1558d6; }
+
+    .info-box {
+      margin: 0 20px 20px;
+      padding: 12px 14px;
+      background: rgba(26,107,255,0.12);
+      border: 1px solid rgba(26,107,255,0.25);
+      border-radius: 8px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.6);
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <button class="back-btn" onclick="window.location.href='/admin'">← Back</button>
+      <div class="page-title">Edu<span>Track</span> · Face Recognition</div>
+    </div>
+    <div class="mode-tabs">
+      <button class="mode-tab active" id="tab-recognize" onclick="switchMode('recognize')">📷 Recognize</button>
+      <button class="mode-tab" id="tab-register" onclick="switchMode('register')">➕ Register Face</button>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+    <!-- Camera -->
+    <div class="camera-area">
+      <div class="camera-container" id="cameraContainer">
+        <div class="camera-placeholder" id="cameraPlaceholder">
+          <div class="cam-icon">📷</div>
+          <p>Camera not started</p>
+        </div>
+        <video id="videoFeed" autoplay muted playsinline style="display:none;"></video>
+        <canvas id="canvasCapture"></canvas>
+
+        <div class="camera-overlay">
+          <div class="bracket tl"></div>
+          <div class="bracket tr"></div>
+          <div class="bracket bl"></div>
+          <div class="bracket br"></div>
+          <div class="scan-line" id="scanLine"></div>
+        </div>
+
+        <div class="status-overlay" id="statusOverlay">
+          <div class="status-box" id="statusBox">
+            <div class="status-icon" id="statusIcon">🔍</div>
+            <div class="status-name" id="statusName">Processing...</div>
+            <div class="status-detail" id="statusDetail">Analyzing face</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="camera-controls">
+        <button class="btn-start-cam" id="startCamBtn" onclick="startCamera()">Start Camera</button>
+        <button class="btn-capture" id="captureBtn" style="display:none;" onclick="captureAndRecognize()" title="Capture & Recognize"></button>
+        <button class="btn-start-cam" id="stopCamBtn" style="display:none;background:rgba(255,92,53,0.8);" onclick="stopCamera()">Stop Camera</button>
+      </div>
+
+      <p style="margin-top:16px;font-size:12px;color:rgba(255,255,255,0.3);font-family:'JetBrains Mono',monospace;">
+        Click capture button or press [SPACE] to recognize
+      </p>
+    </div>
+
+    <!-- Side Panel -->
+    <div class="side-panel">
+      <!-- Recognize Mode -->
+      <div id="recognize-panel">
+        <div class="panel-header">
+          <div class="panel-title">Recognition Result</div>
+          <div class="panel-sub">// last_scan: <span id="lastScanTime">—</span></div>
+        </div>
+
+        <div class="result-card" id="resultCard">
+          <div class="result-default">Capture an image to recognize a student</div>
+        </div>
+
+        <div class="info-box" id="demoWarning" style="display:none;">
+          ⚠️ Demo mode: face_recognition library not installed. Results are simulated.
+        </div>
+
+        <div class="log-section">
+          <div class="log-header">Activity Log</div>
+          <div class="log-list" id="activityLog">
+            <div class="log-item">
+              <div class="log-dot info"></div>
+              <div class="log-msg">System ready</div>
+              <div class="log-time" id="initTime">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Register Mode -->
+      <div id="register-panel" style="display:none;">
+        <div class="panel-header">
+          <div class="panel-title">Register Student Face</div>
+          <div class="panel-sub">// capture → encode → store</div>
+        </div>
+        <div style="padding: 20px;">
+          <div class="reg-form">
+            <div class="form-group">
+              <label>Select Student</label>
+              <select id="reg-student"><option value="">Loading students...</option></select>
+            </div>
+            <p style="font-size:13px;color:rgba(255,255,255,0.4);line-height:1.6;">
+              1. Select a student<br>
+              2. Position their face in the camera<br>
+              3. Click <strong style="color:white;">Register Face</strong>
+            </p>
+            <button class="btn-register" onclick="registerFace()">📸 Capture & Register</button>
+          </div>
+        </div>
+        <div class="info-box" style="margin:0 20px 20px;">
+          Face data is encoded using 128-dimension vectors and stored securely in the database.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API = '';
+  let stream = null;
+  let currentStudent = null;
+  let scanCount = 0;
+
+  // Check auth
+  const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+  if (!user.id) window.location.href = '/';
+
+  document.getElementById('initTime').textContent = new Date().toLocaleTimeString();
+
+  // ── Camera ──
+  async function startCamera() {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: 'user' } });
+      const video = document.getElementById('videoFeed');
+      video.srcObject = stream;
+      video.style.display = 'block';
+      document.getElementById('cameraPlaceholder').style.display = 'none';
+      document.getElementById('startCamBtn').style.display = 'none';
+      document.getElementById('captureBtn').style.display = 'block';
+      document.getElementById('stopCamBtn').style.display = 'block';
+      document.getElementById('scanLine').classList.add('active');
+      addLog('Camera started', 'info');
+    } catch(e) {
+      addLog('Camera access denied: ' + e.message, 'error');
+      alert('Could not access camera: ' + e.message);
+    }
+  }
+
+  function stopCamera() {
+    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+    const video = document.getElementById('videoFeed');
+    video.style.display = 'none';
+    video.srcObject = null;
+    document.getElementById('cameraPlaceholder').style.display = 'flex';
+    document.getElementById('startCamBtn').style.display = 'block';
+    document.getElementById('captureBtn').style.display = 'none';
+    document.getElementById('stopCamBtn').style.display = 'none';
+    document.getElementById('scanLine').classList.remove('active');
+    addLog('Camera stopped', 'info');
+  }
+
+  function captureFrame() {
+    const video = document.getElementById('videoFeed');
+    const canvas = document.getElementById('canvasCapture');
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    return canvas.toDataURL('image/jpeg', 0.85);
+  }
+
+  // ── Recognize ──
+  async function captureAndRecognize() {
+    if (!stream) { alert('Please start camera first'); return; }
+
+    const imageData = captureFrame();
+    scanCount++;
+    const now = new Date();
+    document.getElementById('lastScanTime').textContent = now.toLocaleTimeString();
+
+    showStatusOverlay('🔍', 'Analyzing...', 'Detecting face');
+    addLog(`Capture #${scanCount} — analyzing`, 'info');
+
+    try {
+      const res = await fetch(`${API}/face/recognize`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: imageData, auto_mark: false })
+      });
+      const data = await res.json();
+
+      hideStatusOverlay();
+
+      if (data.demo_mode) {
+        document.getElementById('demoWarning').style.display = 'block';
+        showMatchResult({ student_name: data.student_name, student_id: data.student_id, confidence: 85, demo: true });
+        addLog(`Demo: matched "${data.student_name}"`, 'success');
+      } else if (data.success && data.matched) {
+        showMatchResult(data);
+        addLog(`Matched: ${data.student_name} (${data.confidence}%)`, 'success');
+      } else if (data.success && !data.matched) {
+        showNoMatch();
+        addLog('No match found — unknown person', 'error');
+      } else {
+        showError(data.message || 'Recognition failed');
+        addLog(`Error: ${data.message}`, 'error');
+      }
+    } catch(e) {
+      hideStatusOverlay();
+      showError('Server connection failed');
+      addLog('Server error: ' + e.message, 'error');
+    }
+  }
+
+  function showMatchResult(data) {
+    currentStudent = data;
+    const card = document.getElementById('resultCard');
+    card.className = 'result-card matched';
+    const conf = data.confidence || 85;
+    card.innerHTML = `
+      <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:8px;">✅ Student Identified</div>
+      <div class="result-student-name">${data.student_name}</div>
+      <div class="result-id">ID: ${data.student_id}${data.demo ? ' · DEMO MODE' : ''}</div>
+      <div class="confidence-bar-wrap">
+        <div class="confidence-label"><span>Confidence</span><span>${conf}%</span></div>
+        <div class="confidence-bar"><div class="confidence-fill" style="width:${conf}%"></div></div>
+      </div>
+      <button class="btn-mark-att" onclick="markAttendance(${data.student_id}, '${data.student_name}')">
+        ✅ Mark Attendance
+      </button>
+    `;
+  }
+
+  function showNoMatch() {
+    currentStudent = null;
+    const card = document.getElementById('resultCard');
+    card.className = 'result-card unmatched';
+    card.innerHTML = `
+      <div style="text-align:center;padding:16px 0;">
+        <div style="font-size:40px;margin-bottom:12px;">❓</div>
+        <div style="font-size:18px;font-weight:700;margin-bottom:6px;">Unknown Person</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.4);">No matching student found in database</div>
+      </div>
+    `;
+  }
+
+  function showError(msg) {
+    const card = document.getElementById('resultCard');
+    card.className = 'result-card unmatched';
+    card.innerHTML = `<div class="result-default" style="color:rgba(255,92,53,0.8);">⚠️ ${msg}</div>`;
+  }
+
+  async function markAttendance(studentId, studentName) {
+    try {
+      const res = await fetch(`${API}/attendance`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ student_id: studentId, date: new Date().toISOString().split('T')[0], status: 'present', method: 'face_recognition' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        addLog(`Attendance marked for ${studentName}`, 'success');
+        showStatusOverlay('✅', 'Attendance Marked!', studentName);
+        setTimeout(hideStatusOverlay, 2500);
+      } else {
+        addLog(`Already marked: ${studentName}`, 'error');
+        showStatusOverlay('⚠️', 'Already Marked', data.message);
+        setTimeout(hideStatusOverlay, 2500);
+      }
+    } catch(e) {
+      addLog('Attendance error: ' + e.message, 'error');
+    }
+  }
+
+  // ── Register ──
+  async function registerFace() {
+    const studentId = document.getElementById('reg-student').value;
+    if (!studentId) { alert('Please select a student'); return; }
+    if (!stream) { alert('Please start camera first'); return; }
+
+    const imageData = captureFrame();
+    showStatusOverlay('⚙️', 'Registering...', 'Processing face data');
+
+    try {
+      const res = await fetch(`${API}/face/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ student_id: parseInt(studentId), image: imageData })
+      });
+      const data = await res.json();
+      hideStatusOverlay();
+
+      if (data.success) {
+        addLog(`Face registered for student ID ${studentId}`, 'success');
+        showStatusOverlay('✅', 'Face Registered!', 'Student face stored in database');
+        setTimeout(hideStatusOverlay, 2500);
+      } else {
+        showStatusOverlay('❌', 'Registration Failed', data.message);
+        setTimeout(hideStatusOverlay, 3000);
+      }
+    } catch(e) {
+      hideStatusOverlay();
+      addLog('Registration error: ' + e.message, 'error');
+    }
+  }
+
+  // ── UI Helpers ──
+  function showStatusOverlay(icon, name, detail) {
+    document.getElementById('statusIcon').textContent = icon;
+    document.getElementById('statusName').textContent = name;
+    document.getElementById('statusDetail').textContent = detail;
+    document.getElementById('statusOverlay').classList.add('show');
+  }
+  function hideStatusOverlay() {
+    document.getElementById('statusOverlay').classList.remove('show');
+  }
+
+  function addLog(msg, type = 'info') {
+    const log = document.getElementById('activityLog');
+    const item = document.createElement('div');
+    item.className = 'log-item';
+    item.innerHTML = `<div class="log-dot ${type}"></div><div class="log-msg">${msg}</div><div class="log-time">${new Date().toLocaleTimeString()}</div>`;
+    log.insertBefore(item, log.firstChild);
+    if (log.children.length > 20) log.lastChild.remove();
+  }
+
+  function switchMode(mode) {
+    document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(`tab-${mode}`).classList.add('active');
+    document.getElementById('recognize-panel').style.display = mode === 'recognize' ? 'flex' : 'none';
+    document.getElementById('recognize-panel').style.flexDirection = 'column';
+    document.getElementById('register-panel').style.display = mode === 'register' ? 'block' : 'none';
+  }
+
+  // Spacebar capture
+  document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' && stream) { e.preventDefault(); captureAndRecognize(); }
+  });
+
+  // Load students for register
+  fetch(`${API}/students`)
+    .then(r => r.json())
+    .then(d => {
+      const sel = document.getElementById('reg-student');
+      sel.innerHTML = '<option value="">Select student...</option>' +
+        (d.students || []).map(s => `<option value="${s.id}">${s.name} (${s.roll_number})</option>`).join('');
+    })
+    .catch(() => {});
+</script>
+</body>
+</html>
